@@ -141,7 +141,7 @@ app.run()
 За основу давайте возьмем пример [дашборда](https://getbootstrap.com/docs/5.1/examples/dashboard/#) из библиотеки стилей и скриптов Bootstrap. Я немного изменил его, чтобы он мог открываться локально. Файл `templates/d1.html`.
 
 
-```
+```python
 from flask import Flask
 from flask import render_template
 from datetime import datetime
@@ -193,12 +193,28 @@ app.run()
 
 Давайте сделаем несколько косметических изменений в шаблоне:
 
-```
+```html
 <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3" href="#">Company name</a>
 ```
 
 Превратится в
 
-```
+```html
 <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3" href="#">База резюме</a>
+```
+
+Изменим столбцы в таблице:
+
+```html
+<table class="table table-striped table-sm">
+          <thead>
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">Зарплата</th>
+              <th scope="col">Образование</th>
+              <th scope="col">Пол</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
 ```
