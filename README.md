@@ -27,3 +27,21 @@ Use a production WSGI server instead.
  
 Надо понимать, что в условном продакшене нужна другая схема запуска, например, через  WSGI, например, используя [Gunicorn](https://gunicorn.org/). Мы будем обходиться отладочным, разработческим сервером.
 
+Давайте сделаем контент чуть динамичнее:
+
+```python
+from flask import Flask
+from datetime import datetime
+
+
+app = Flask(__name__)
+
+@app.route("/")
+def hello_world():
+    return f"<p>{datetime.now()}</p>"
+
+app.run()
+```
+
+Эта веб-страница будет  показывать текущее время при перезагрузке.
+
