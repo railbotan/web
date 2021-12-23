@@ -4,7 +4,6 @@ from flask import Response
 import sqlite3
 import random
 import io
-import pandas as pd
 from collections import Counter
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
@@ -42,10 +41,20 @@ def statistic():
     jobTitles = get_list_field('jobTitle')
     qualifications = get_list_field('qualification')
     res = ""
-    csv = get_cv()
-    count = count_people_field1_not_match_field2(jobTitles, qualifications)
-    res += f"<p>Из {count[1]} людей не совпадают профессия и должность у {count[0]}</p>"
+    peop_count = count_people_field1_not_match_field2(jobTitles, qualifications)
+    res += f"<p>Из {peop_count[1]} людей не совпадают профессия и должность у {peop_count[0]}</p>"
+    res += f"<p>Топ 5 образований людей, которые работают менеджерами:</p>"
+    res += get_top(5, jobTitles, qualifications, "менеджер")
+    res += f"<p>Топ 5 должностей людей, которые по диплому являются инженерами:</p>"
+    res += get_top(5, qualifications, jobTitles,  "инженер")
+    return res
 
+
+def get_top(top_size, field_to_search, field_to_return, str_to_search):
+    res = ''
+    full_top = top(field_to_search, field_to_return, str_to_search)
+    for i in range(top_size):
+        res += f"<p>- {full_top[i][0]} - {full_top[i][1]} чел.</p>"
     return res
 
 
@@ -106,6 +115,16 @@ def find_match(f1, f2):
         if word in str(f2).lower():
             return True
     return False
+
+
+def top(f_to_search, f_to_return, str_to_search):
+    res = []
+    for (f_s, f_r) in zip(f_to_search, f_to_return):
+        if str(f_s[0]).lower().find(str_to_search[:-2]) != -1:
+            if str(f_r[0]).find('None') == -1:
+                res.append(f_r[0])
+
+    return Counter(res).most_common()
 
 
 app.run()
