@@ -4,7 +4,8 @@ from flask import Response
 import sqlite3
 import random
 import io
-
+import pandas as pd
+from collections import Counter
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 
@@ -34,6 +35,25 @@ def dashboard():
                            labels=[row[0] for row in res],
                            data=[row[1] for row in res]
                            )
+
+
+@app.route("/statistic")
+def statistic():
+    jobTitles = get_list_field('jobTitle')
+    qualifications = get_list_field('qualification')
+    res = ""
+    csv = get_cv()
+    count = count_people_field1_not_match_field2(jobTitles, qualifications)
+    res += f"<p>Из {count[1]} людей не совпадают профессия и должность у {count[0]}</p>"
+
+    return res
+
+
+def get_list_field(field):
+    con = sqlite3.connect('works.sqlite')
+    res = list(con.execute(f'select {field} from works'))
+    con.close()
+    return res
 
 
 def dict_factory(cursor, row):
@@ -68,6 +88,24 @@ def create_figure():
     ys = [random.randint(1, 50) for x in xs]
     axis.plot(xs, ys)
     return fig
+
+
+def count_people_field1_not_match_field2(field1, field2):
+    res_count = 0
+    total = 0
+    for (f1, f2) in zip(field1, field2):
+        total += 1
+        if not find_match(f1[0], f2[0]) and not find_match(f2[0], f1[0]):
+            res_count += 1
+    return res_count, total
+
+
+def find_match(f1, f2):
+    arr1 = str(f1).lower().replace('-', ' ').split()
+    for word in arr1:
+        if word in str(f2).lower():
+            return True
+    return False
 
 
 app.run()
