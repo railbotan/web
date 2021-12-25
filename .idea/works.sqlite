@@ -1,0 +1,7 @@
+SELECT * FROM 'education' LIMIT 0,30
+
+SELECT * FROM 'genders' LIMIT 0,30
+
+SELECT * FROM 'genders' LIMIT 0,30
+
+SELECT * FROM 'works' LIMIT 0,30
