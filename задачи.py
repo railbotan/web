@@ -25,8 +25,14 @@ def cv_index():
 
 @app.route("/dashboard")
 def dashboard():
+    con = sqlite3.connect('works.sqlite')
+    res = con.execute('SELECT SUBSTR(dateModify, 1, 4), COUNT(*) FROM works WHERE dateModify NOT NULL GROUP BY '
+                      'SUBSTR(dateModify, 1, 4)').fetchall()
+    con.close()
     return render_template('d3.html',
                            cvs=get_cv(),
+                           labels=[row[0] for row in res],
+                           data=[row[1] for row in res]
                            )
 
 
