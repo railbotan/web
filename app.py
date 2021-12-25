@@ -1,5 +1,6 @@
 from datetime import datetime
 
+import pandas as pd
 from flask import Flask
 from flask import render_template
 from flask import Response
@@ -9,6 +10,8 @@ import io
 
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
+
+from statistics import count_profession_dont_match_qualification, get_managers_top_qualification, get_engineers_top_job
 
 app = Flask(__name__)
 
@@ -33,6 +36,24 @@ def dashboard():
                            graph_data=get_year_distribution(cvs))
 
 
+@app.route('/statistics')
+def statistics():
+    cvs = get_cv(None)
+    df = pd.DataFrame(cvs).dropna()
+    df = df.apply(lambda x: x.astype(str).str.lower())
+    all_count = len(df)
+    dont_match_count = count_profession_dont_match_qualification(df)
+    dont_match_percent = f"{dont_match_count / all_count:.0%}"
+    top_managers = get_managers_top_qualification(df).index.values.tolist()
+    top_engineers = get_engineers_top_job(df).index.values.tolist()
+    return render_template('statistics.html',
+                           all_count=all_count,
+                           dont_match_count=dont_match_count,
+                           dont_match_percent=dont_match_percent,
+                           top_managers=top_managers,
+                           top_engineers=top_engineers)
+
+
 def dict_factory(cursor, row):
     # обертка для преобразования
     # полученной строки. (взята из документации)
@@ -42,10 +63,10 @@ def dict_factory(cursor, row):
     return d
 
 
-def get_cv():
+def get_cv(limit=20):
     con = sqlite3.connect('works.sqlite')
     con.row_factory = dict_factory
-    res = list(con.execute('select * from works limit 20'))
+    res = list(con.execute(f'select * from works' + (' limit {limit}' if limit else '')))
     con.close()
     return res
 
