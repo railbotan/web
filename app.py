@@ -1,0 +1,96 @@
+from datetime import datetime
+
+import pandas as pd
+from flask import Flask
+from flask import render_template
+from flask import Response
+import sqlite3
+import random
+import io
+
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from matplotlib.figure import Figure
+
+from statistics import count_profession_dont_match_qualification, get_managers_top_qualification, get_engineers_top_job
+
+app = Flask(__name__)
+
+
+@app.route("/")
+def cv_index():
+    cvs = get_cv()
+    res = ""
+    for i, cv in enumerate(cvs):
+        res += f"<h1>{i + 1})</h1>"
+        res += f"<p>Желаемая зарплата: {cv['salary']}.</p>"
+        res += f"<p>Образование: {cv['educationType']}.</p>"
+
+    return res
+
+
+@app.route("/dashboard")
+def dashboard():
+    cvs = get_cv()
+    return render_template('d3.html',
+                           cvs=cvs,
+                           graph_data=get_year_distribution(cvs))
+
+
+@app.route('/statistics')
+def statistics():
+    cvs = get_cv(None)
+    df = pd.DataFrame(cvs).dropna()
+    df = df.apply(lambda x: x.astype(str).str.lower())
+    all_count = len(df)
+    dont_match_count = count_profession_dont_match_qualification(df)
+    dont_match_percent = f"{dont_match_count / all_count:.0%}"
+    top_managers = get_managers_top_qualification(df).index.values.tolist()
+    top_engineers = get_engineers_top_job(df).index.values.tolist()
+    return render_template('statistics.html',
+                           all_count=all_count,
+                           dont_match_count=dont_match_count,
+                           dont_match_percent=dont_match_percent,
+                           top_managers=top_managers,
+                           top_engineers=top_engineers)
+
+
+def dict_factory(cursor, row):
+    # обертка для преобразования
+    # полученной строки. (взята из документации)
+    d = {}
+    for idx, col in enumerate(cursor.description):
+        d[col[0]] = row[idx]
+    return d
+
+
+def get_cv(limit=20):
+    con = sqlite3.connect('works.sqlite')
+    con.row_factory = dict_factory
+    res = list(con.execute(f'select * from works' + (' limit {limit}' if limit else '')))
+    con.close()
+    return res
+
+
+def get_year_distribution(data: list[dict]) -> dict[int, int]:
+    res = {}
+    for sign in data:
+        year = datetime.strptime(sign['dateModify'], "%Y-%m-%d").year
+        res[year] = 1 if year not in res else res[year] + 1
+    return res
+
+
+@app.route('/plot.png')
+def plot_png():
+    fig = create_figure()
+    output = io.BytesIO()
+    FigureCanvas(fig).print_png(output)
+    return Response(output.getvalue(), mimetype='image/png')
+
+
+def create_figure():
+    fig = Figure()
+    axis = fig.add_subplot(1, 1, 1)
+    xs = range(100)
+    ys = [random.randint(1, 50) for x in xs]
+    axis.plot(xs, ys)
+    return fig

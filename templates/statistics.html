@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Статистика</title>
+</head>
+<body>
+<h1>Статистика</h1>
+<h3>Всего людей: {{ all_count }}</h3>
+Из которых у <b>{{ dont_match_count }}</b> профессия и должность не совпадают.
+Что составляет <b>{{ dont_match_percent }}</b>. <br>
+<h3>Топ 5 квалификаций менеджеров:</h3>
+<ol>
+    {% for qualification in top_managers %}
+        <li>{{ qualification }}</li>
+    {% endfor %}
+</ol>
+<h3>Топ 5 должностей инженеров:</h3>
+<ol>
+    {% for job in top_engineers %}
+        <li>{{ job }}</li>
+    {% endfor %}
+</ol>
+</body>
+</html>
