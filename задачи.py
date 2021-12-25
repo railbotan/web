@@ -4,7 +4,7 @@ from flask import Response
 import sqlite3
 import random
 import io
-
+from collections import Counter
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 
@@ -34,6 +34,46 @@ def dashboard():
                            labels=[row[0] for row in res],
                            data=[row[1] for row in res]
                            )
+
+
+@app.route("/stat")
+def stat():
+    con = sqlite3.connect('works.sqlite')
+    jobs = list(con.execute(f'select jobTitle from works'))
+    qualifications = list(con.execute(f'select qualification from works'))
+    con.close()
+    answer = 0
+    all = 0
+    for (job, qualification) in zip(jobs, qualifications):
+        all += 1
+        if not compare(str(job), str(qualification)) and not compare(str(qualification), str(job)):
+            answer += 1
+    res = f"<p>Из {all} людей не совпадают профессия и должность у {answer}</p>"
+    res += f"<p>Топ 5 образований людей, которые работают менеджерами:</p>"
+    res += get_top(jobs, qualifications, "менедж")
+    res += f"<p>Топ 5 должностей людей, которые по диплому являются инженерами:</p>"
+    res += get_top(qualifications, jobs, "инжен")
+    return res
+
+
+def get_top(profession, other, prof_name):
+    answer = ''
+    res = []
+    for (prof, top_prof) in zip(profession, other):
+        if str(prof[0]).lower().find(prof_name) != -1:
+            if str(top_prof[0]).find('None') == -1:
+                res.append(top_prof[0])
+    full_top = Counter(res).most_common()
+    for i in range(5):
+        answer += f"<p>- {full_top[i][0]} - {full_top[i][1]} чел.</p>"
+    return answer
+
+
+def compare(profession, other):
+    for i in profession.lower().replace('-', ' ').split():
+        if i in other.lower():
+            return True
+    return False
 
 
 def dict_factory(cursor, row):
