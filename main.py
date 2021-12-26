@@ -4,6 +4,7 @@ from flask import Response
 import sqlite3
 import random
 import io
+from collections import Counter
 
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
@@ -34,6 +35,61 @@ def dashboard():
                            labels=[row[0] for row in res],
                            data=[row[1] for row in res]
                            )
+
+@app.route("/statistic")
+def statistic():
+    jobTitles = get_list('jobTitle')
+    qualifications = get_list('qualification')
+    res = ""
+    people_count = count_people(jobTitles, qualifications)
+    res += f"<p>Из {people_count[1]} людей не совпадают профессия и должность у {people_count[0]}</p>"
+    res += f"<p>Топ 5 образований людей, которые работают по профессии менеджер:</p>"
+    res += get_top(5, jobTitles, qualifications, "менеджер")
+    res += f"<p>Топ 5 должностей людей, которые по диплому являются инженерами:</p>"
+    res += get_top(5, qualifications, jobTitles,  "инженер")
+    return res
+
+
+def get_top(top_size, column_1, column_2, profession):
+    res = ''
+    full_top = top(column_1, column_2, profession)
+    for i in range(top_size):
+        res += f"<p>- {full_top[i][0]} - {full_top[i][1]} чел.</p>"
+    return res
+
+
+def get_list(column):
+    con = sqlite3.connect('works.sqlite')
+    res = list(con.execute(f'select {column} from works'))
+    con.close()
+    return res
+
+def count_people(column_1, column_2):
+    res_count = 0
+    total = 0
+    for (c1, c2) in zip(column_1, column_2):
+        total += 1
+        if not find_match(c1[0], c2[0]) and not find_match(c2[0], c1[0]):
+            res_count += 1
+    return res_count, total
+
+
+def find_match(column_1, column_2):
+    arr1 = str(column_1).lower().replace('-', ' ').split()
+    for word in arr1:
+        if word in str(column_2).lower():
+            return True
+    return False
+
+
+def top(column_1, column_2, profession):
+    res = []
+    for (c_1, c_2) in zip(column_1, column_2):
+        if str(c_1[0]).lower().find(profession[:-2]) != -1:
+            if str(c_2[0]).find('None') == -1:
+                res.append(c_2[0])
+
+    return Counter(res).most_common()
 
 def dict_factory(cursor, row):
     # обертка для преобразования
