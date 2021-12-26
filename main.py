@@ -37,6 +37,30 @@ def dashboard():
                            )
 
 
+@app.route("/statistic")
+def statistic():
+    job_titles = get_list_field('jobTitle')
+    qualifications = get_list_field('qualification')
+    res = ""
+    count = get_match_count(job_titles, qualifications)
+    res += f"<p>У {count[1] - count[0]} человек  из {count[1]} не совпадают профессия и должность.</p>"
+    res += "<p>Топ 5 квалификаций менеджеров:<br>"
+    for item in get_top('jobTitle', 'qualification', 'менеджер'):
+        res += f"{item[0]} {item[1]}</br>"
+    res += "</p><p>Топ 5 должностей инженеров:<br>"
+    for item in get_top('qualification', 'jobTitle', 'инженер'):
+        res += f"{item[0]} {item[1]}</br>"
+    res += "</p>"
+    return res
+
+
+def get_list_field(field):
+    con = sqlite3.connect('works.sqlite')
+    res = list(con.execute(f'select {field} from works'))
+    con.close()
+    return res
+
+
 def dict_factory(cursor, row):
     # обертка для преобразования
     # полученной строки. (взята из документации)
@@ -69,6 +93,30 @@ def create_figure():
     ys = [random.randint(1, 50) for x in xs]
     axis.plot(xs, ys)
     return fig
+
+
+def get_match_count(first_list, second_list):
+    return len(list((filter(lambda x: contains(x[0], x[1]) or contains(x[1], x[0]), zip(first_list, second_list))))),\
+           len(list(zip(first_list, second_list)))
+
+
+def contains(sub_text, text):
+    words = str(sub_text).lower().replace('-', ' ').split()
+    for word in words:
+        if word in str(text).lower():
+            return True
+    return False
+
+
+def get_top(search_field, return_field, value):
+    con = sqlite3.connect('works.sqlite')
+    cur = con.cursor()
+    cur.execute(f"SELECT LOWER({return_field}), count(*) AS 'count' FROM works "
+                f"WHERE {return_field} IS NOT NULL AND "
+                f"(LOWER({search_field}) like '%{value}%')"
+                f"GROUP BY LOWER({return_field}) "
+                f"ORDER BY count DESC LIMIT 5")
+    return cur.fetchall()
 
 
 app.run()
