@@ -10,6 +10,22 @@ from matplotlib.figure import Figure
 
 app = Flask(__name__)
 
+def count_people_diploma_not_match_job(jobTitles, qualification):
+    result = 0
+    total = 0
+    for (jt, q) in zip(jobTitles, qualification):
+        total += 1
+        if not does_diploma_match(jt[0], q[0]) and not does_diploma_match(q[0], jt[0]):
+            result += 1
+    return result, total
+
+
+def does_diploma_match(str1, str2):
+    str_array = str1.lower().replace('-', ' ').split()
+    for word in str_array:
+        if word in str2.lower():
+            return True
+    return False
 
 @app.route("/")
 def cv_index():
@@ -30,6 +46,22 @@ def dashboard():
                       'SUBSTR(dateModify, 1, 4)').fetchall()
     con.close()
     return render_template('d2.html', cvs=get_cv(), labels=[row[0] for row in res], data=[row[1] for row in res])
+
+@app.route("/statistic")
+def statistic():
+    jobTitles = get_list('jobTitle')
+    qualifications = get_list('qualification')
+    res = ""
+    count = count_people_diploma_not_match_job(jobTitles, qualifications)
+    res += f"<p>Из {count[1]} людей не совпадают профессия и должность у {count[0]}</p>"
+    return res
+
+
+def get_list(field):
+    con = sqlite3.connect('works.sqlite')
+    res = list(con.execute(f'select {field} from works'))
+    con.close()
+    return res
 
 
 def dict_factory(cursor, row):
